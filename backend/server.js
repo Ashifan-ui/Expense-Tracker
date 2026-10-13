@@ -1,13 +1,14 @@
+
 import dns from 'node:dns';
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+
 import authRoutes from './routes/authRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 
-// Force Node.js to use IPv4 and public DNS servers
+// Prefer IPv4 DNS resolution
 dns.setDefaultResultOrder('ipv4first');
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
@@ -48,33 +49,28 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-// Start server
+// Connect to MongoDB Atlas and start server
 const startServer = async () => {
   try {
-    let mongoUri = process.env.MONGO_URI;
-
-    console.log('DNS servers used by Node:', dns.getServers());
+    const mongoUri = process.env.MONGO_URI;
 
     if (!mongoUri) {
-      const memoryServer = await MongoMemoryServer.create();
-      mongoUri = memoryServer.getUri();
-
-      console.warn(
-        'MONGO_URI is not set. Using in-memory MongoDB for local development.'
+      throw new Error(
+        'MONGO_URI is missing. Configure it in Vercel Environment Variables.'
       );
     }
 
-    console.log('Connecting to MongoDB...');
+    console.log('Connecting to MongoDB Atlas...');
 
     await mongoose.connect(mongoUri);
 
-    console.log('MongoDB connected successfully');
+    console.log('MongoDB Atlas connected successfully');
 
     app.listen(PORT, () => {
-      console.log(`Server listening on http://localhost:${PORT}`);
+      console.log(`Server listening on port ${PORT}`);
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('Failed to start server:', error.message);
     process.exit(1);
   }
 };
